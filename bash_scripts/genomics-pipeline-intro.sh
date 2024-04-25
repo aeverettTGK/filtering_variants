@@ -1,4 +1,9 @@
 #!/bin/bash
+#SBATCH --account=utu
+#SBATCH --partition=lonepeak
+#SBATCH --node=1
+#SBATCH --ntasks=1
+#SBATCH --time=1:00:00
 
 {
 usage="$(basename "$0") [-h] [-l <SRA_list>] [-g <reference_genome.fasta>] [-a <Frequency>] [-t <threads>]
@@ -49,6 +54,7 @@ begin=`date +%s`
 #   echo "Trimming downloaded Illumina datasets with fastp."
 #   echo ""
 #   
+#   module load fastp
 #   z= ls -1 *.fastq.gz
 #   for z in *.fastq.gz; do fastp -w ${t} -i ${z} -o ${z}.fastp
 #   gzip ${z}.fastp
@@ -58,6 +64,7 @@ begin=`date +%s`
 #   # Indexing Reference #
 #   ######################
 #   
+#   module load samtools
 #   echo "Indexing Reference"
 #   echo ""
 #   samtools faidx ${g}
@@ -98,6 +105,7 @@ begin=`date +%s`
 ### Performing Variant Calling with freebayes ###
 #################################################
 
+module load freebayes
 echo "Performing Variant Calling with freebayes:"
 echo ""
 
@@ -105,9 +113,11 @@ x= ls -1 *.bam
 for x in *.bam; do freebayes -f ${g} -b ${x} > ${x}.freebayes.vcf
 done
 
+
 #######################################
 ### Merging variants using jacquard ###
 #######################################
+module load jacquard
 echo "Merging variants using jacquard"
 echo ""
 echo "for information, please see: https://jacquard.readthedocs.io/en/v0.42/overview.html#why-would-i-use-jacquard"
@@ -123,6 +133,7 @@ end=`date +%s`
 elapsed=`expr $end - $begin`
 echo Time taken: $elapsed
 
+module load vmstat
 mdate=`date +'%d/%m/%Y %H:%M:%S'`
 # NOTE: If you are running a mac and having trouble with the code below,
 # ----- try using 'vm_stat' instead of 'vmstat'
@@ -130,6 +141,5 @@ mcpu=$[100-$(vmstat 1 2|tail -1|awk '{print $15}')]%
 mmem=`free | grep Mem | awk '{print $3/$2 * 100.0}'`
 echo "$mdate | $mcpu | $mmem" >> ./stats-cpu
 ###############################################################
-#
 } | tee logfile
 #
